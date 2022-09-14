@@ -167,6 +167,7 @@ android {
             if (!enableSeparateBuildPerCPUArchitecture) {
                 ndk {
                     abiFilters (*reactNativeArchitectures())
+                    abiFilters "armeabi-v7a"
                 }
             }
         }
