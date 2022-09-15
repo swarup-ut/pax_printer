@@ -7,8 +7,9 @@
  */
 
 import React from 'react';
-import type {Node} from 'react';
+import type { Node } from 'react';
 import {
+  Button,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -25,8 +26,10 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
+import EscPosPrinter, { getPrinterSeriesByName } from 'react-native-esc-pos-printer';
+import successPng from './success.png'
 
-const Section = ({children, title}): Node => {
+const Section = ({ children, title }): Node => {
   const isDarkMode = useColorScheme() === 'dark';
   return (
     <View style={styles.sectionContainer}>
@@ -52,6 +55,61 @@ const Section = ({children, title}): Node => {
   );
 };
 
+async function testPrint() {
+  try {
+    const printers = await EscPosPrinter.discover()
+
+    const printer = printers[0]
+
+    await EscPosPrinter.init({
+      target: printer.target,
+      seriesName: getPrinterSeriesByName(printer.name),
+      language: 'EPOS2_LANG_EN',
+    })
+
+    const printing = new EscPosPrinter.printing();
+
+    const printStatus = await printing
+      .initialize()
+      .align('center')
+      .size(3, 3)
+      .line('DUDE!')
+      .smooth()
+      .line('DUDE!')
+      .smooth()
+      .size(1, 1)
+      .text('is that a ')
+      .bold()
+      .underline()
+      .text('printer?')
+      .bold()
+      .underline()
+      .newline(2)
+      .align('center')
+      .image(successPng, 200)
+      .barcode({
+        value: 'Test123',
+        type: 'EPOS2_BARCODE_CODE93',
+        hri: 'EPOS2_HRI_BELOW',
+        width: 2,
+        height: 50,
+      })
+      .qrcode({
+        value: 'Test123',
+        level: 'EPOS2_LEVEL_M',
+        width: 5,
+      })
+      .cut()
+      .addPulse()
+      .send()
+
+    console.log('Success:', printStatus)
+
+  } catch (e) {
+    console.log('Error:', printStatus)
+  }
+}
+
 const App: () => Node = () => {
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -59,33 +117,16 @@ const App: () => Node = () => {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  function onPrintBtnPress() {
+
+    console.log('onPrintBtnPress')
+    testPrint()
+
+  }
+
   return (
     <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      <Button title='print' onPress={onPrintBtnPress} />
     </SafeAreaView>
   );
 };
